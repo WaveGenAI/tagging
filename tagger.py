@@ -6,12 +6,14 @@ import torch
 from model.bart import BartCaptionModel
 from utils.audio_utils import load_audio, STR_CH_FIRST
 
+
 class Tagger:
 
     def __init__(self):
         self.model = None
         self.device = None
         self.logger = Logger("Tagger")
+
     def load_model(self):
         """
           Function to load the pre-trained model.
@@ -26,9 +28,7 @@ class Tagger:
         model.eval()
         self.model = model
 
-
-
-    def get_audio(self, audio_paths, duration=10, target_sr=16000, max_batch=4):
+    def get_audio(self, audio_paths, duration=10, target_sr=16000, max_batch=50):
         """
           Function to load and process audio files.
 
@@ -62,25 +62,28 @@ class Tagger:
             audio_split = np.split(audio[:ceil * n_samples], ceil)
             audio = torch.from_numpy(np.stack(audio_split).astype('float32'))
             i += len(audio_split)
-            is_truncated = False
             if i >= max_batch:
-                i = 0
                 if len(audios) == 0:
-                    self.logger.warning(f"Audio file {path} is too long to be processed (max batch size {max_batch} actual batch: {len(audio_split)}). truncating it.")
+                    self.logger.warning(
+                        f"Audio file {path} is too long to be processed (max batch size {max_batch} actual batch: {len(audio_split)}). truncating it.")
                     a = audio[:max_batch]
                     audios.append(a)
                     audio_map[path] = max_batch
-                    is_truncated = True
-                    # continue    # for skipping the audio file
+                    i = 0
+                    # continue # for skipping the audio file
+                else:
+                    i = len(audio_split)
                 audio_cat = torch.cat(audios, 0)
                 batched_audio.append(audio_cat)
                 batched_audio_map.append(audio_map)
                 audios = []
                 audio_map = {}
-            if not is_truncated:
-                audio_map[path] = i = len(audio_split)
+                if i != 0:  # if i == 0, then the previous audio was too long and has been processed
+                    audio_map[path] = i
+                    audios.append(audio)
+            else:
+                audio_map[path] = i
                 audios.append(audio)
-
 
         if len(audios) == 0:
             raise ValueError("No audio files to process.")
@@ -95,8 +98,7 @@ class Tagger:
 
         return batched_audio, batched_audio_map
 
-
-    def tag(self, audio_paths: list):
+    def tag(self, audio_paths: list, max_batch: int = 50):
         """
           Function to generate tags for the given audio files.
 
@@ -104,7 +106,7 @@ class Tagger:
           :return: Dictionary mapping audio paths to their generated tags
         """
         response = {}
-        batched_audio_tensor, batched_audio_map = self.get_audio(audio_paths=audio_paths)
+        batched_audio_tensor, batched_audio_map = self.get_audio(audio_paths=audio_paths, max_batch=max_batch)
         for audio_tensor, audio_map in zip(batched_audio_tensor, batched_audio_map):
             if self.device is not None:
                 audio_tensor = audio_tensor.to(self.device)
@@ -130,7 +132,7 @@ if __name__ == "__main__":
     audio_paths = ["./orchestra.wav", "./electronic.mp3", ]
     tagger = Tagger()
     tagger.load_model()
-    res = tagger.tag(audio_paths)
+    res = tagger.tag(audio_paths, max_batch=50)
     for path, description in res.items():
         print(path)
         print(description)
