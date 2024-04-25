@@ -1,0 +1,12 @@
+transformers
+numpy
+datasets
+tensorboard
+gradio
+torch
+torchaudio
+evaluate
+soundfile
+librosa
+accelerate
+bitsandbytes
