@@ -3,8 +3,8 @@ from logging import Logger
 import numpy as np
 import torch
 
-from model.bart import BartCaptionModel
-from utils.audio_utils import load_audio, STR_CH_FIRST
+from .model.bart import BartCaptionModel
+from .utils.audio_utils import load_audio, STR_CH_FIRST
 
 
 class Tagger:
@@ -84,17 +84,15 @@ class Tagger:
             else:
                 audio_map[path] = i
                 audios.append(audio)
-
-        if len(audios) == 0:
-            raise ValueError("No audio files to process.")
-        elif len(audios[0]) >= max_batch:
-            self.logger.warning(
-                f"Last audio file {path} is too long to be processed (max batch size {max_batch} actual batch: {len(audios[0])}). Truncating it.")
-            audios[0] = audios[0][:max_batch]
-            audio_map[path] = max_batch
-        audio = torch.cat(audios, 0)
-        batched_audio.append(audio)
-        batched_audio_map.append(audio_map)
+        if len(audios) != 0:
+            if len(audios[0]) >= max_batch:
+                self.logger.warning(
+                    f"Last audio file {path} is too long to be processed (max batch size {max_batch} actual batch: {len(audios[0])}). Truncating it.")
+                audios[0] = audios[0][:max_batch]
+                audio_map[path] = max_batch
+            audio = torch.cat(audios, 0)
+            batched_audio.append(audio)
+            batched_audio_map.append(audio_map)
 
         return batched_audio, batched_audio_map
 
