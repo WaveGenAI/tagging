@@ -1,4 +1,4 @@
-from tagger import Tagger
+from tagging.tagger import Tagger
 
 tagger = Tagger()
 tagger.load_model()

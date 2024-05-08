@@ -3,8 +3,8 @@ from logging import Logger
 import numpy as np
 import torch
 
-from model.bart import BartCaptionModel
-from utils.audio_utils import load_audio, STR_CH_FIRST
+from .model.bart import BartCaptionModel
+from .utils.audio_utils import load_audio, STR_CH_FIRST
 
 
 class Tagger:
