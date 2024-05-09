@@ -28,6 +28,17 @@ class Tagger:
         model.eval()
         self.model = model
 
+    def unload_model(self):
+        """
+          Function to unload the pre-trained model.
+
+          :return: None
+        """
+        del self.model
+        torch.cuda.empty_cache()
+        self.model = None
+        self.device = None
+
     def get_audio(self, audio_paths, duration=10, target_sr=16000, max_batch=50):
         """
           Function to load and process audio files.
@@ -104,6 +115,10 @@ class Tagger:
           :return: Dictionary mapping audio paths to their generated tags
         """
         response = {}
+        if self.model is None:
+            self.logger.warning("Model not loaded. Loading the model.")
+            self.load_model()
+
         batched_audio_tensor, batched_audio_map = self.get_audio(audio_paths=audio_paths, max_batch=max_batch)
         for audio_tensor, audio_map in zip(batched_audio_tensor, batched_audio_map):
             if self.device is not None:
