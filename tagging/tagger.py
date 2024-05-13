@@ -40,7 +40,7 @@ class Tagger:
         self.model = None
         self.device = None
 
-    def get_audio(self, audio_paths, duration=10, target_sr=16000, max_batch=50, n_samples=2):
+    def get_audio(self, audio_paths, duration=10, target_sr=16000, max_batch=50, n_samples=4):
         """
           Function to load and process audio files.
 
