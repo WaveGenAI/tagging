@@ -1,10 +1,11 @@
+import random
 from logging import Logger
 
 import numpy as np
 import torch
 
-from .model.bart import BartCaptionModel
-from .utils.audio_utils import load_audio, STR_CH_FIRST
+from tagging.model.bart import BartCaptionModel
+from tagging.utils.audio_utils import load_audio, STR_CH_FIRST
 
 
 class Tagger:
@@ -39,7 +40,7 @@ class Tagger:
         self.model = None
         self.device = None
 
-    def get_audio(self, audio_paths, duration=10, target_sr=16000, max_batch=50):
+    def get_audio(self, audio_paths, duration=10, target_sr=16000, max_batch=50, n_samples=2):
         """
           Function to load and process audio files.
 
@@ -49,7 +50,7 @@ class Tagger:
           :param max_batch: Maximum batch size for processing
           :return: Batched audio tensor and a map of audio paths to their indices in the batch
         """
-        n_samples = int(duration * target_sr)
+        t_samples = int(duration * target_sr)
         batched_audio = []
         batched_audio_map = []
         audios = []
@@ -64,13 +65,15 @@ class Tagger:
             )
             if len(audio.shape) == 2:
                 audio = audio.mean(0, False)  # to mono
-            input_size = int(n_samples)
+            input_size = int(t_samples)
             if audio.shape[-1] < input_size:  # pad sequence
                 pad = np.zeros(input_size)
                 pad[: audio.shape[-1]] = audio
                 audio = pad
-            ceil = int(audio.shape[-1] // n_samples)
-            audio_split = np.split(audio[:ceil * n_samples], ceil)
+            ceil = int(audio.shape[-1] // t_samples)
+            audio_split = np.split(audio[:ceil * t_samples], ceil)
+            indices = sorted(random.sample(range(len(audio_split)), n_samples))
+            audio_split = [audio_split[i] for i in indices]
             audio = torch.from_numpy(np.stack(audio_split).astype('float32'))
             i += len(audio_split)
             if i >= max_batch:
