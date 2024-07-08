@@ -84,7 +84,7 @@ class Tagger:
                 audio = pad
             ceil = int(audio.shape[-1] // t_samples)
             audio_split = np.split(audio[: ceil * t_samples], ceil)
-            indices = sorted(random.sample(range(len(audio_split)), n_samples))
+            indices = sorted(random.sample(range(len(audio_split)), min(len(audio_split), n_samples)))
             audio_split = [audio_split[i] for i in indices]
             audio = torch.from_numpy(np.stack(audio_split).astype("float32"))
             i += len(audio_split)
